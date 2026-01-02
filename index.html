@@ -3,32 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>忍者武士：七珠傳奇 - 永不言棄版</title>
+    <title>忍者武士：七珠傳奇 - 鋼鐵覺醒版</title>
     <style>
         body { margin: 0; padding: 0; overflow: hidden; background: #050505; touch-action: none; font-family: sans-serif; }
         #game-container { position: relative; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; }
-        canvas { background: #0d0d0d; border: 2px solid #444; max-width: 100%; max-height: 90vh; border-radius: 8px; }
+        canvas { background: #080808; border: 2px solid #555; max-width: 100%; max-height: 90vh; border-radius: 8px; }
         
-        /* UI 頂部 */
         #ui-overlay { position: absolute; top: 10px; width: 95%; display: flex; flex-direction: column; pointer-events: none; z-index: 10; }
         .top-row { display: flex; justify-content: space-between; align-items: center; }
-        .hp-container { width: 140px; }
-        .hp-bar { height: 12px; background: #222; border: 1.5px solid #fff; border-radius: 6px; overflow: hidden; }
+        .hp-container { width: 150px; }
+        .hp-bar { height: 14px; background: #222; border: 2px solid #fff; border-radius: 7px; overflow: hidden; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
         .hp-fill { height: 100%; width: 100%; transition: width 0.2s; }
         
         #relic-rack { display: flex; justify-content: center; gap: 8px; margin-top: 10px; }
-        .relic { width: 25px; height: 25px; border-radius: 50%; border: 1px dashed #555; display: flex; align-items: center; justify-content: center; font-size: 14px; opacity: 0.2; }
-        .relic.active { opacity: 1; border: 1px solid gold; box-shadow: 0 0 10px gold; }
+        .relic { width: 28px; height: 28px; border-radius: 50%; border: 1px dashed #555; display: flex; align-items: center; justify-content: center; font-size: 14px; opacity: 0.2; background: rgba(255,255,255,0.05); }
+        .relic.active { opacity: 1; border: 1px solid gold; box-shadow: 0 0 15px gold; background: rgba(255,215,0,0.2); }
 
-        #level-info { color: gold; font-weight: bold; font-size: 18px; }
+        #level-info { color: gold; font-weight: bold; font-size: 22px; text-shadow: 0 0 10px #000; }
         
-        /* 結算畫面 */
         #result-screen { position: absolute; inset: 0; background: rgba(0,0,0,0.95); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; color: #fff; text-align: center; }
-        .btn { padding: 15px 45px; color: #fff; border: none; cursor: pointer; font-size: 24px; border-radius: 50px; margin-top: 25px; font-weight: bold; pointer-events: auto; }
-        .btn-next { background: #2ecc71; box-shadow: 0 6px #27ae60; }
-        .btn-retry { background: #f39c12; box-shadow: 0 6px #d35400; }
+        .btn { padding: 15px 45px; color: #fff; border: none; cursor: pointer; font-size: 24px; border-radius: 50px; margin-top: 25px; font-weight: bold; pointer-events: auto; box-shadow: 0 6px rgba(0,0,0,0.5); }
+        .btn-next { background: #2ecc71; }
+        .btn-retry { background: #f39c12; }
 
-        #hint { position: absolute; bottom: 10px; color: rgba(255,255,255,0.3); font-size: 11px; }
+        #hint { position: absolute; bottom: 10px; color: rgba(255,255,255,0.4); font-size: 12px; }
     </style>
 </head>
 <body>
@@ -37,12 +35,12 @@
     <div id="ui-overlay">
         <div class="top-row">
             <div class="hp-container">
-                <div style="color:#2ecc71; font-size:10px; font-weight:bold;">PLAYER</div>
+                <div style="color:#2ecc71; font-size:11px; font-weight:bold;">PLAYER [防禦強化中]</div>
                 <div class="hp-bar"><div id="p1-hp" class="hp-fill" style="background:#2ecc71"></div></div>
             </div>
             <div id="level-info">第 1 關 / 7</div>
             <div class="hp-container">
-                <div style="color:#e74c3c; text-align:right; font-size:10px; font-weight:bold;">BOSS</div>
+                <div style="color:#e74c3c; text-align:right; font-size:11px; font-weight:bold;">BOSS</div>
                 <div class="hp-bar"><div id="p2-hp" class="hp-fill" style="background:#e74c3c"></div></div>
             </div>
         </div>
@@ -54,19 +52,19 @@
     </div>
 
     <canvas id="gameCanvas"></canvas>
-    <div id="hint">吃掉落的道具會變強！ | 失敗可從該關無限續關</div>
+    <div id="hint">受傷後有短暫無敵時間 | 綠球可恢復 50% 血量</div>
 
     <div id="result-screen">
         <div id="victory-box" style="display:none; flex-direction:column; align-items:center;">
-            <div style="font-size: 60px;">🏆</div>
-            <h1 style="color:gold;">斬殺成功！</h1>
-            <p id="relic-text" style="font-size: 20px;"></p>
-            <button class="btn btn-next" onclick="nextLevel()">前進下一關 ➔</button>
+            <div style="font-size: 70px;">🏆</div>
+            <h1 style="color:gold; font-size: 40px;">克敵制勝！</h1>
+            <p id="relic-text" style="font-size: 22px; color: #2ecc71;"></p>
+            <button class="btn btn-next" onclick="nextLevel()">獲得力量，進下一關 ➔</button>
         </div>
         <div id="defeat-box" style="display:none; flex-direction:column; align-items:center;">
-            <h1 style="color:#e74c3c; font-size:48px;">暫時落敗</h1>
-            <p>別傷心，信物還在！重新調整再戰！</p>
-            <button class="btn btn-retry" onclick="retryLevel()">從本關重新挑戰</button>
+            <h1 style="color:#e74c3c; font-size:50px;">武藝不精</h1>
+            <p style="font-size: 18px;">別灰心！防禦力已疊加，再來一次！</p>
+            <button class="btn btn-retry" onclick="retryLevel()">從本關重頭來過</button>
         </div>
     </div>
 </div>
@@ -79,53 +77,62 @@
     let currentLevel = 1;
     let gameActive = true;
     let floatingTexts = [];
-    let items = []; // 戰場掉落物
+    let items = [];
     const gravity = 0.65;
     const friction = 0.88;
 
-    // 玩家屬性
-    let playerStats = { maxHp: 100, moveSpeed: 16, jumpPower: 14, attackDmg: 12, attackRange: 80, critRate: 0.15, attackCD: 24 };
+    // --- 核心平衡數值調整 ---
+    let playerStats = { 
+        maxHp: 200,          // 初始血量翻倍
+        moveSpeed: 16, 
+        jumpPower: 14, 
+        attackDmg: 15,       // 初始攻擊提升
+        attackRange: 85, 
+        critRate: 0.15, 
+        attackCD: 24,
+        defense: 1.0         // 傷害承受倍率 (越小越強)
+    };
     
-    // 道具屬性 (暫時性強化)
     let tempBuffs = { dmg: 1, speed: 1 };
+    let invincibilityFrames = 0; // 無敵時間計數
 
     const relicData = [
-        { name: "力之珠", icon: "🔴", bonus: () => playerStats.attackDmg += 8 },
-        { name: "速之珠", icon: "🟠", bonus: () => { playerStats.moveSpeed += 4; playerStats.jumpPower += 2; } },
-        { name: "體之珠", icon: "🟡", bonus: () => playerStats.maxHp += 150 },
-        { name: "銳之珠", icon: "🟢", bonus: () => playerStats.attackRange += 50 },
-        { name: "運之珠", icon: "🔵", bonus: () => playerStats.critRate += 0.2 },
-        { name: "風之珠", icon: "🟣", bonus: () => playerStats.attackCD -= 6 },
-        { name: "神之珠", icon: "⭐", bonus: () => { playerStats.attackDmg *= 1.5; playerStats.maxHp += 300; } }
+        { name: "力之珠", icon: "🔴", bonus: () => { playerStats.attackDmg += 10; playerStats.defense *= 0.9; } },
+        { name: "速之珠", icon: "🟠", bonus: () => { playerStats.moveSpeed += 3; playerStats.jumpPower += 2; playerStats.defense *= 0.9; } },
+        { name: "體之珠", icon: "🟡", bonus: () => { playerStats.maxHp += 200; playerStats.defense *= 0.8; } },
+        { name: "銳之珠", icon: "🟢", bonus: () => { playerStats.attackRange += 50; playerStats.defense *= 0.9; } },
+        { name: "運之珠", icon: "🔵", bonus: () => { playerStats.critRate += 0.2; playerStats.defense *= 0.9; } },
+        { name: "風之珠", icon: "🟣", bonus: () => { playerStats.attackCD -= 5; playerStats.defense *= 0.9; } },
+        { name: "神之珠", icon: "⭐", bonus: () => { playerStats.attackDmg *= 1.5; playerStats.maxHp += 300; playerStats.defense *= 0.7; } }
     ];
 
     const allStages = {
-        1: [{x:50,y:550,w:700,h:15}, {x:300,y:400,w:200,h:10}],
+        1: [{x:50,y:550,w:700,h:15}, {x:300,y:380,w:200,h:10}],
         2: [{x:50,y:550,w:700,h:15}, {x:100,y:420,w:150,h:10}, {x:550,y:420,w:150,h:10}, {x:325,y:280,w:150,h:10}],
-        3: [{x:50,y:550,w:250,h:15}, {x:500,y:550,w:250,h:15}, {x:200,y:400,w:400,h:10}, {x:325,y:250,w:150,h:10}],
-        4: [{x:50,y:580,w:700,h:15}, {x:100,y:450,w:80,h:10}, {x:350,y:350,w:80,h:10}, {x:600,y:250,w:80,h:10}, {x:50,y:150,w:150,h:10}, {x:600,y:150,w:150,h:10}],
-        5: [{x:50,y:550,w:700,h:15}, {x:50,y:420,w:100,h:10}, {x:650,y:420,w:100,h:10}, {x:200,y:300,w:400,h:10}, {x:350,y:150,w:100,h:10}],
-        6: [{x:50,y:550,w:700,h:15}, {x:100,y:450,w:80,h:10}, {x:620,y:450,w:80,h:10}, {x:100,y:300,w:80,h:10}, {x:620,y:300,w:80,h:10}, {x:325,y:380,w:150,h:10}, {x:325,y:200,w:150,h:10}],
-        7: [{x:50,y:550,w:700,h:15}, {x:50,y:450,w:60,h:10}, {x:200,y:400,w:60,h:10}, {x:350,y:350,w:60,h:10}, {x:500,y:300,w:60,h:10}, {x:650,y:250,w:60,h:10}, {x:50,y:100,w:700,h:10}]
+        3: [{x:50,y:550,w:250,h:15}, {x:500,y:550,w:250,h:15}, {x:150,y:400,w:500,h:10}, {x:325,y:250,w:150,h:10}, {x:50,y:200,w:100,h:10}, {x:650,y:200,w:100,h:10}],
+        4: [{x:50,y:580,w:700,h:15}, {x:100,y:450,w:100,h:10}, {x:350,y:350,w:100,h:10}, {x:600,y:250,w:100,h:10}, {x:150,y:150,w:200,h:10}, {x:450,y:150,w:200,h:10}],
+        5: [{x:50,y:550,w:700,h:15}, {x:250,y:440,w:300,h:10}, {x:50,y:330,w:150,h:10}, {x:600,y:330,w:150,h:10}, {x:300,y:200,w:200,h:10}],
+        6: [{x:50,y:550,w:150,h:15}, {x:600,y:550,w:150,h:15}, {x:300,y:450,w:200,h:10}, {x:100,y:350,w:150,h:10}, {x:550,y:350,w:150,h:10}, {x:325,y:220,w:150,h:10}, {x:50,y:120,w:700,h:10}],
+        7: [{x:50,y:550,w:700,h:15}, {x:100,y:450,w:100,h:10}, {x:600,y:450,w:100,h:10}, {x:250,y:350,w:300,h:10}, {x:50,y:250,w:100,h:10}, {x:650,y:250,w:100,h:10}, {x:50,y:120,w:700,h:10}]
     };
 
     let platforms = allStages[1];
 
     class Item {
         constructor() {
-            const types = [{t:'heal',c:'#2ecc71',l:'HP'}, {t:'power',c:'#e74c3c',l:'ATK'}, {t:'speed',c:'#3498db',l:'SPD'}];
+            const types = [{t:'heal',c:'#2ecc71',l:'HP+50%'}, {t:'power',c:'#e74c3c',l:'ATK 2X'}, {t:'speed',c:'#3498db',l:'SPD UP'}];
             const t = types[Math.floor(Math.random()*types.length)];
             this.type = t.t; this.color = t.c; this.label = t.l;
             this.x = Math.random() * 600 + 100; this.y = -50; this.active = true;
         }
         update() {
-            this.y += 2;
+            this.y += 2.5;
             platforms.forEach(p => { if (this.y+20 > p.y && this.x > p.x && this.x < p.x+p.w && this.y < p.y) this.y = p.y-20; });
         }
         draw() {
             ctx.fillStyle = this.color;
-            ctx.beginPath(); ctx.arc(this.x+10, this.y+10, 12, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = "#fff"; ctx.font = "bold 10px Arial"; ctx.fillText(this.label, this.x+3, this.y+14);
+            ctx.beginPath(); ctx.arc(this.x+15, this.y+15, 18, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = "#fff"; ctx.font = "bold 10px Arial"; ctx.fillText(this.label, this.x+2, this.y+18);
         }
     }
 
@@ -137,10 +144,11 @@
         }
         reset() {
             this.x = this.initX; this.y = this.initY;
-            this.w = 25; this.h = 42;
+            this.w = 30; this.h = 45;
             this.dx = 0; this.dy = 0;
-            let hpBase = 150;
-            this.hp = this.isNPC ? (hpBase * Math.pow(1.6, currentLevel - 1)) : playerStats.maxHp;
+            // 魔王血量平衡調整
+            let hpBase = 180;
+            this.hp = this.isNPC ? (hpBase * Math.pow(1.4, currentLevel - 1)) : playerStats.maxHp;
             this.maxHp = this.hp;
             this.facing = this.isNPC ? -1 : 1;
             this.isAttacking = false; this.attackCD = 0;
@@ -153,31 +161,38 @@
                 }
             });
             if (this.x < 0) this.x = 0; if (this.x + this.w > canvas.width) this.x = canvas.width - this.w;
-            if (this.y > canvas.height) { this.hp -= this.maxHp * 0.15; this.y = 0; }
+            if (this.y > canvas.height) { 
+                if(!this.isNPC) { this.hp -= this.maxHp * 0.1; invincibilityFrames = 30; }
+                this.y = 0; 
+            }
             if (this.attackCD > 0) this.attackCD--;
             if (this.attackCD < 10) this.isAttacking = false;
 
             // 撿道具
             items.forEach((item, i) => {
-                if (item.active && Math.abs(this.x - item.x) < 30 && Math.abs(this.y - item.y) < 30) {
+                if (item.active && Math.abs(this.x - item.x) < 40 && Math.abs(this.y - item.y) < 40) {
                     if (!this.isNPC) {
-                        if (item.type === 'heal') this.hp = Math.min(playerStats.maxHp, this.hp + playerStats.maxHp*0.3);
-                        if (item.type === 'power') { tempBuffs.dmg = 2; setTimeout(()=>tempBuffs.dmg = 1, 5000); }
-                        if (item.type === 'speed') { tempBuffs.speed = 1.5; setTimeout(()=>tempBuffs.speed = 1, 5000); }
-                        floatingTexts.push({x:this.x, y:this.y, text: "ITEM GET!", life: 30, color: "#fff"});
+                        if (item.type === 'heal') this.hp = Math.min(playerStats.maxHp, this.hp + playerStats.maxHp*0.5);
+                        if (item.type === 'power') { tempBuffs.dmg = 2; setTimeout(()=>tempBuffs.dmg = 1, 6000); }
+                        if (item.type === 'speed') { tempBuffs.speed = 1.4; setTimeout(()=>tempBuffs.speed = 1, 6000); }
+                        floatingTexts.push({x:this.x, y:this.y, text: "強化成功!", life: 30, color: "#fff"});
                     }
                     item.active = false;
                 }
             });
         }
         draw() {
+            // 受傷閃爍效果
+            if (!this.isNPC && invincibilityFrames > 0 && Math.floor(Date.now() / 50) % 2 === 0) return;
+
             if (!this.isNPC && currentLevel === 7) { ctx.shadowBlur = 20; ctx.shadowColor = "gold"; }
             ctx.fillStyle = this.color;
             ctx.fillRect(this.x, this.y, this.w, this.h);
             ctx.shadowBlur = 0;
+
             if (this.isAttacking) {
                 ctx.strokeStyle = (tempBuffs.dmg > 1) ? "#f1c40f" : "#fff";
-                ctx.lineWidth = 4; ctx.beginPath();
+                ctx.lineWidth = 5; ctx.beginPath();
                 let range = this.isNPC ? 75 : playerStats.attackRange;
                 ctx.moveTo(this.x + this.w/2, this.y + 20);
                 ctx.lineTo(this.x + this.w/2 + (range * this.facing), this.y + 20);
@@ -194,7 +209,7 @@
     window.addEventListener('touchend', e => {
         let dx = e.changedTouches[0].pageX - startX;
         let dy = e.changedTouches[0].pageY - startY;
-        if (Math.sqrt(dx*dx + dy*dy) < 15 && gameActive) {
+        if (Math.sqrt(dx*dx + dy*dy) < 20 && gameActive) {
             if (p1.attackCD === 0) { p1.facing = (p2.x > p1.x) ? 1 : -1; p1.isAttacking = true; p1.attackCD = playerStats.attackCD; }
         } else if (gameActive) {
             if (dy < -30) p1.dy = -playerStats.jumpPower * tempBuffs.speed;
@@ -202,15 +217,12 @@
         }
     });
 
-    // 接關系統：重置當前關卡
     function retryLevel() {
-        items = [];
-        floatingTexts = [];
-        p1.reset();
-        p2.reset();
+        items = []; floatingTexts = [];
+        p1.reset(); p2.reset();
         document.getElementById('result-screen').style.display = 'none';
         document.getElementById('defeat-box').style.display = 'none';
-        gameActive = true;
+        gameActive = true; invincibilityFrames = 0;
         requestAnimationFrame(gameLoop);
     }
 
@@ -225,20 +237,33 @@
             document.getElementById('result-screen').style.display = 'none';
             document.getElementById('victory-box').style.display = 'none';
             items = []; gameActive = true; requestAnimationFrame(gameLoop);
-        } else { alert("武林至尊！傳說終結！"); location.reload(); }
+        } else { alert("恭喜！你已成就武林至尊傳奇！"); location.reload(); }
     }
 
     function checkCombat() {
         [p1, p2].forEach(a => {
             const v = (a === p1) ? p2 : p1;
             if (a.isAttacking && a.attackCD >= playerStats.attackCD - 5) {
+                // 如果主角處於無敵，不計算受傷
+                if (v === p1 && invincibilityFrames > 0) return;
+
                 let range = a.isNPC ? 75 : playerStats.attackRange;
                 if ((a.facing === 1 && v.x > a.x && v.x < a.x + range) || (a.facing === -1 && v.x < a.x && v.x > a.x - range)) {
-                    if (Math.abs(a.y - v.y) < 55) {
+                    if (Math.abs(a.y - v.y) < 60) {
                         let isCrit = !a.isNPC && Math.random() < playerStats.critRate;
-                        let dmg = a.isNPC ? (10 + currentLevel * 3) : playerStats.attackDmg * tempBuffs.dmg;
-                        if (isCrit) { dmg *= 2.3; floatingTexts.push({ x: v.x, y: v.y, text: "爆擊!!", life: 30, color: "gold" }); }
+                        // 魔王傷害公式優化：基礎傷害 12，隨關卡增加，但會被玩家防禦抵銷
+                        let baseBossDmg = (12 + currentLevel * 4);
+                        let dmg = a.isNPC ? (baseBossDmg * playerStats.defense) : playerStats.attackDmg * tempBuffs.dmg;
+                        
+                        if (isCrit) { dmg *= 2.5; floatingTexts.push({ x: v.x, y: v.y, text: "爆擊!!", life: 30, color: "gold" }); }
+                        
                         v.hp -= dmg;
+                        
+                        // 主角受傷後啟動無敵與視覺反饋
+                        if (v === p1) {
+                            invincibilityFrames = 40; // 約 0.6 秒無敵
+                            floatingTexts.push({ x: v.x, y: v.y-20, text: "-"+Math.round(dmg), life: 30, color: "#ff4757" });
+                        }
                     }
                 }
             }
@@ -250,14 +275,14 @@
         if (!gameActive) return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // 每 5 秒自動掉落道具
-        spawnTimer++;
-        if (spawnTimer > 300) { items.push(new Item()); spawnTimer = 0; }
+        if (invincibilityFrames > 0) invincibilityFrames--;
 
-        // AI
+        spawnTimer++;
+        if (spawnTimer > 250) { items.push(new Item()); spawnTimer = 0; }
+
         let dx = p1.x - p2.x; let dy = p1.y - p2.y;
-        let espeed = 3 + (currentLevel * 0.5);
-        if (Math.abs(dx) > 60) { p2.dx = dx > 0 ? espeed : -espeed; p2.facing = dx > 0 ? 1 : -1; }
+        let espeed = 3 + (currentLevel * 0.4);
+        if (Math.abs(dx) > 70) { p2.dx = dx > 0 ? espeed : -espeed; p2.facing = dx > 0 ? 1 : -1; }
         else if (Math.random() < (0.05 + currentLevel*0.01) && p2.attackCD === 0) {
             p2.facing = (dx > 0) ? 1 : -1; p2.isAttacking = true; p2.attackCD = 25;
         }
@@ -285,7 +310,7 @@
             if (p1.hp <= 0) document.getElementById('defeat-box').style.display = 'flex';
             else {
                 document.getElementById('victory-box').style.display = 'flex';
-                document.getElementById('relic-text').innerText = `獲得信物：${relicData[currentLevel-1].name}`;
+                document.getElementById('relic-text').innerText = `獲取信物：${relicData[currentLevel-1].name} (防禦永久強化)`;
             }
         } else { requestAnimationFrame(gameLoop); }
     }
