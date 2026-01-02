@@ -3,41 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>忍者武士：七龍珠追逐戰</title>
+    <title>忍者武士：七龍珠傳奇</title>
     <style>
-        body { margin: 0; padding: 0; overflow: hidden; background: #050505; touch-action: none; font-family: sans-serif; }
+        body { margin: 0; padding: 0; overflow: hidden; background: #050505; touch-action: none; font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; }
         #game-container { position: relative; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; }
-        canvas { background: #0a0a0a; border: 2px solid #333; max-width: 100%; max-height: 90vh; border-radius: 5px; }
+        canvas { background: #0a0a0a; border: 2px solid #333; max-width: 100%; max-height: 90vh; border-radius: 8px; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
         
-        #ui-overlay { position: absolute; top: 10px; width: 95%; display: flex; flex-direction: column; pointer-events: none; }
+        /* UI 頂部 */
+        #ui-overlay { position: absolute; top: 10px; width: 95%; display: flex; flex-direction: column; pointer-events: none; z-index: 10; }
         .top-row { display: flex; justify-content: space-between; align-items: center; }
         .hp-container { width: 140px; }
         .hp-bar { height: 12px; background: #222; border: 1.5px solid #fff; border-radius: 6px; overflow: hidden; }
         .hp-fill { height: 100%; width: 100%; transition: width 0.2s; }
         
         #relic-rack { display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
-        .relic { width: 25px; height: 25px; border-radius: 50%; border: 1px dashed #666; display: flex; align-items: center; justify-content: center; font-size: 14px; opacity: 0.2; }
-        .relic.active { opacity: 1; border: 1px solid gold; box-shadow: 0 0 8px gold; }
+        .relic { width: 28px; height: 28px; border-radius: 50%; border: 1px dashed #555; display: flex; align-items: center; justify-content: center; font-size: 14px; opacity: 0.2; background: rgba(255,255,255,0.05); }
+        .relic.active { opacity: 1; border: 1px solid gold; box-shadow: 0 0 12px gold; background: rgba(255,215,0,0.1); }
 
-        #level-info { color: gold; font-weight: bold; font-size: 18px; }
+        #level-info { color: gold; font-weight: bold; font-size: 20px; text-shadow: 0 0 5px #000; }
         
-        #result-screen { position: absolute; inset: 0; background: rgba(0,0,0,0.95); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; color: #fff; text-align: center; }
-        .trophy { font-size: 70px; margin-bottom: 20px; }
-        .btn { padding: 12px 35px; background: #e74c3c; color: #fff; border: none; cursor: pointer; font-size: 20px; border-radius: 5px; margin-top: 20px;}
-        #pull-hint { position: absolute; top: -50px; width: 100%; text-align: center; color: #2ecc71; font-weight: bold; transition: 0.3s; }
+        /* 結算畫面 */
+        #result-screen { position: absolute; inset: 0; background: rgba(0,0,0,0.92); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; color: #fff; text-align: center; }
+        .trophy { font-size: 80px; margin-bottom: 10px; animation: trophyBounce 1s infinite alternate; }
+        @keyframes trophyBounce { from { transform: translateY(0); } to { transform: translateY(-10px); } }
+
+        /* 按鈕樣式 */
+        .btn { padding: 15px 45px; background: #2ecc71; color: #fff; border: none; cursor: pointer; font-size: 24px; border-radius: 50px; margin-top: 25px; font-weight: bold; box-shadow: 0 6px #27ae60; transition: 0.1s; pointer-events: auto; }
+        .btn:active { transform: translateY(4px); box-shadow: 0 2px #27ae60; }
+        .btn-restart { background: #e74c3c; box-shadow: 0 6px #c0392b; }
+        .btn-restart:active { box-shadow: 0 2px #c0392b; }
+
+        #hint { position: absolute; bottom: 10px; color: rgba(255,255,255,0.2); font-size: 11px; }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <div id="pull-hint">⬇️ 奪取信物，邁向下一層地獄 ⬇️</div>
     <div id="ui-overlay">
         <div class="top-row">
             <div class="hp-container">
                 <div style="color:#2ecc71; font-size:10px; font-weight:bold;">PLAYER</div>
                 <div class="hp-bar"><div id="p1-hp" class="hp-fill" style="background:#2ecc71"></div></div>
             </div>
-            <div id="level-info">STAGE 1 / 7</div>
+            <div id="level-info">第 1 關 / 7</div>
             <div class="hp-container">
                 <div style="color:#e74c3c; text-align:right; font-size:10px; font-weight:bold;">BOSS</div>
                 <div class="hp-bar"><div id="p2-hp" class="hp-fill" style="background:#e74c3c"></div></div>
@@ -51,17 +59,18 @@
     </div>
 
     <canvas id="gameCanvas"></canvas>
+    <div id="hint">滑動跳躍/移動 | 點擊砍擊 (自動轉向) | 贏了點按鈕進下一關</div>
 
     <div id="result-screen">
-        <div id="victory-box" style="display:none;">
+        <div id="victory-box" style="display:none; flex-direction:column; align-items:center;">
             <div class="trophy">🏆</div>
-            <h1 id="victory-title" style="color:gold;">征服宗師</h1>
-            <p id="relic-name" style="font-size: 24px;"></p>
-            <p style="color: #2ecc71; margin-top: 40px;">⬇️ 下拉螢幕進入下一關 ⬇️</p>
+            <h1 style="color:gold; font-size: 36px; margin: 0;">征服宗師！</h1>
+            <p id="relic-get-text" style="font-size: 20px; color: #2ecc71; margin: 10px 0;"></p>
+            <button id="next-btn" class="btn" onclick="nextLevel()">前進下一關 ➔</button>
         </div>
-        <div id="defeat-box" style="display:none;">
-            <h1 style="color:#e74c3c; font-size:48px;">挑戰失敗</h1>
-            <button class="btn" onclick="location.reload()">重新挑戰</button>
+        <div id="defeat-box" style="display:none; flex-direction:column; align-items:center;">
+            <h1 style="color:#e74c3c; font-size:48px;">功虧一簣</h1>
+            <button class="btn btn-restart" onclick="location.reload()">重新挑戰</button>
         </div>
     </div>
 </div>
@@ -74,29 +83,30 @@
     let currentLevel = 1;
     let gameActive = true;
     let floatingTexts = [];
-    const gravity = 0.6;
+    const gravity = 0.65;
     const friction = 0.88;
 
-    const playerStats = { maxHp: 100, moveSpeed: 16, jumpPower: 14, attackDmg: 10, attackRange: 80, critRate: 0.15, attackCD: 24 };
+    // 玩家屬性
+    const playerStats = { maxHp: 100, moveSpeed: 16, jumpPower: 14, attackDmg: 11, attackRange: 80, critRate: 0.15, attackCD: 24 };
     const relicData = [
-        { name: "力之珠", icon: "🔴", bonus: () => playerStats.attackDmg += 5 },
-        { name: "速之珠", icon: "🟠", bonus: () => { playerStats.moveSpeed += 4; playerStats.jumpPower += 2; } },
-        { name: "體之珠", icon: "🟡", bonus: () => playerStats.maxHp += 100 },
+        { name: "力之珠", icon: "🔴", bonus: () => playerStats.attackDmg += 6 },
+        { name: "速之珠", icon: "🟠", bonus: () => { playerStats.moveSpeed += 3; playerStats.jumpPower += 2; } },
+        { name: "體之珠", icon: "🟡", bonus: () => playerStats.maxHp += 120 },
         { name: "銳之珠", icon: "🟢", bonus: () => playerStats.attackRange += 50 },
         { name: "運之珠", icon: "🔵", bonus: () => playerStats.critRate += 0.2 },
         { name: "風之珠", icon: "🟣", bonus: () => playerStats.attackCD -= 6 },
-        { name: "神之珠", icon: "⭐", bonus: () => { playerStats.attackDmg *= 1.5; playerStats.maxHp += 200; } }
+        { name: "神之珠", icon: "⭐", bonus: () => { playerStats.attackDmg *= 1.5; playerStats.maxHp += 300; } }
     ];
 
-    // --- 複雜地圖設計：多台階、垂直追逐 ---
+    // 更複雜的關卡地圖 (台階數量增加)
     const allStages = {
-        1: [{x:50,y:550,w:700,h:15}, {x:200,y:400,w:150,h:10}, {x:450,y:400,w:150,h:10}, {x:325,y:250,w:150,h:10}],
-        2: [{x:50,y:550,w:700,h:15}, {x:100,y:420,w:120,h:10}, {x:340,y:420,w:120,h:10}, {x:580,y:420,w:120,h:10}, {x:220,y:280,w:120,h:10}, {x:460,y:280,w:120,h:10}, {x:340,y:150,w:120,h:10}],
-        3: [{x:50,y:550,w:200,h:15}, {x:550,y:550,w:200,h:15}, {x:300,y:450,w:200,h:10}, {x:50,y:350,w:200,h:10}, {x:550,y:350,w:200,h:10}, {x:300,y:250,w:200,h:10}, {x:50,y:150,w:200,h:10}, {x:550,y:150,w:200,h:10}],
-        4: [{x:50,y:580,w:700,h:15}, {x:100,y:480,w:60,h:10}, {x:250,y:400,w:60,h:10}, {x:400,y:320,w:60,h:10}, {x:550,y:240,w:60,h:10}, {x:700,y:160,w:60,h:10}, {x:50,y:100,w:300,h:10}, {x:450,y:100,w:300,h:10}],
-        5: [{x:50,y:550,w:700,h:15}, {x:50,y:450,w:100,h:10}, {x:650,y:450,w:100,h:10}, {x:200,y:350,w:400,h:10}, {x:50,y:250,w:100,h:10}, {x:650,y:250,w:100,h:10}, {x:200,y:150,w:400,h:10}, {x:350,y:80,w:100,h:10}],
-        6: [{x:50,y:550,w:700,h:15}, {x:100,y:480,w:100,h:10}, {x:600,y:480,w:100,h:10}, {x:100,y:350,w:100,h:10}, {x:600,y:350,w:100,h:10}, {x:350,y:420,w:100,h:10}, {x:350,y:280,w:100,h:10}, {x:100,y:200,w:600,h:10}],
-        7: [{x:50,y:550,w:700,h:15}, {x:50,y:450,w:80,h:10}, {x:200,y:400,w:80,h:10}, {x:350,y:350,w:80,h:10}, {x:500,y:400,w:80,h:10}, {x:650,y:450,w:80,h:10}, {x:50,y:250,w:80,h:10}, {x:200,y:200,w:80,h:10}, {x:350,y:150,w:80,h:10}, {x:500,y:200,w:80,h:10}, {x:650,y:250,w:80,h:10}, {x:300,y:50,w:200,h:10}]
+        1: [{x:50,y:550,w:700,h:15}, {x:300,y:400,w:200,h:10}],
+        2: [{x:50,y:550,w:700,h:15}, {x:100,y:430,w:150,h:10}, {x:550,y:430,w:150,h:10}, {x:325,y:300,w:150,h:10}, {x:325,y:150,w:150,h:10}],
+        3: [{x:50,y:550,w:250,h:15}, {x:500,y:550,w:250,h:15}, {x:200,y:420,w:100,h:10}, {x:500,y:420,w:100,h:10}, {x:50,y:300,w:150,h:10}, {x:600,y:300,w:150,h:10}, {x:325,y:200,w:150,h:10}],
+        4: [{x:50,y:550,w:700,h:15}, {x:50,y:450,w:80,h:10}, {x:200,y:380,w:80,h:10}, {x:350,y:310,w:80,h:10}, {x:500,y:240,w:80,h:10}, {x:650,y:170,w:80,h:10}, {x:50,y:100,w:200,h:10}, {x:550,y:100,w:200,h:10}],
+        5: [{x:50,y:550,w:700,h:15}, {x:300,y:460,w:200,h:10}, {x:50,y:370,w:150,h:10}, {x:600,y:370,w:150,h:10}, {x:250,y:280,w:300,h:10}, {x:50,y:190,w:150,h:10}, {x:600,y:190,w:150,h:10}, {x:350,y:100,w:100,h:10}],
+        6: [{x:50,y:550,w:150,h:15}, {x:600,y:550,w:150,h:15}, {x:300,y:480,w:200,h:10}, {x:100,y:380,w:100,h:10}, {x:600,y:380,w:100,h:10}, {x:350,y:290,w:100,h:10}, {x:100,y:200,w:100,h:10}, {x:600,y:200,w:100,h:10}, {x:300,y:120,w:200,h:10}],
+        7: [{x:50,y:570,w:700,h:15}, {x:50,y:470,w:60,h:10}, {x:150,y:400,w:60,h:10}, {x:250,y:330,w:60,h:10}, {x:350,y:260,w:60,h:10}, {x:450,y:190,w:60,h:10}, {x:550,y:120,w:60,h:10}, {x:650,y:350,w:120,h:10}, {x:50,y:150,w:120,h:10}, {x:300,y:60,w:200,h:10}]
     };
 
     let platforms = allStages[1];
@@ -109,11 +119,11 @@
         }
         reset() {
             this.x = this.initX; this.y = this.initY;
-            this.w = 25; this.h = 40;
+            this.w = 25; this.h = 42;
             this.dx = 0; this.dy = 0;
-            // --- 魔王血量動態成長：第 7 關血量是第 1 關的 6 倍以上 ---
-            let hpBase = 120;
-            this.hp = this.isNPC ? (hpBase * Math.pow(1.5, currentLevel - 1)) : playerStats.maxHp;
+            // 魔王血量隨關卡大幅增加
+            let hpBase = 130;
+            this.hp = this.isNPC ? (hpBase * Math.pow(1.55, currentLevel - 1)) : playerStats.maxHp;
             this.maxHp = this.hp;
             this.facing = this.isNPC ? -1 : 1;
             this.isAttacking = false; this.attackCD = 0;
@@ -126,19 +136,19 @@
                 }
             });
             if (this.x < 0) this.x = 0; if (this.x + this.w > canvas.width) this.x = canvas.width - this.w;
-            if (this.y > canvas.height) { this.hp -= this.maxHp * 0.1; this.y = 0; } // 摔落扣 10%
+            if (this.y > canvas.height) { this.hp -= this.maxHp * 0.15; this.y = 0; this.dx = 0; }
             if (this.attackCD > 0) this.attackCD--;
             if (this.attackCD < 10) this.isAttacking = false;
         }
         draw() {
-            if (!this.isNPC && currentLevel === 7) { ctx.shadowBlur = 15; ctx.shadowColor = "gold"; }
+            if (!this.isNPC && currentLevel === 7) { ctx.shadowBlur = 20; ctx.shadowColor = "gold"; }
             ctx.fillStyle = this.color;
             ctx.fillRect(this.x, this.y, this.w, this.h);
             ctx.shadowBlur = 0;
             if (this.isAttacking) {
                 ctx.strokeStyle = (!this.isNPC && currentLevel === 7) ? "gold" : "#fff";
-                ctx.lineWidth = 3; ctx.beginPath();
-                let range = this.isNPC ? 70 : playerStats.attackRange;
+                ctx.lineWidth = 4; ctx.beginPath();
+                let range = this.isNPC ? 75 : playerStats.attackRange;
                 ctx.moveTo(this.x + this.w/2, this.y + 20);
                 ctx.lineTo(this.x + this.w/2 + (range * this.facing), this.y + 20);
                 ctx.stroke();
@@ -155,19 +165,11 @@
         let dx = e.changedTouches[0].pageX - startX;
         let dy = e.changedTouches[0].pageY - startY;
         let dist = Math.sqrt(dx*dx + dy*dy);
-        if (dist < 15) {
+        if (dist < 15 && gameActive) {
             if (p1.attackCD === 0) { p1.facing = (p2.x > p1.x) ? 1 : -1; p1.isAttacking = true; p1.attackCD = playerStats.attackCD; }
-        } else {
+        } else if (gameActive) {
             if (dy < -30) p1.dy = -playerStats.jumpPower;
             if (Math.abs(dx) > 20) { p1.dx = (dx / Math.abs(dx)) * playerStats.moveSpeed; p1.facing = dx > 0 ? 1 : -1; }
-        }
-    });
-
-    window.addEventListener('touchmove', e => {
-        let moveY = e.touches[0].pageY;
-        if (moveY - startY > 200 && !gameActive && p1.hp > 0) {
-            document.getElementById('pull-hint').style.top = '20px';
-            if (moveY - startY > 300) nextLevel();
         }
     });
 
@@ -178,24 +180,26 @@
             currentLevel++;
             platforms = allStages[currentLevel];
             p1.reset(); p2.reset();
-            document.getElementById('level-info').innerText = `STAGE ${currentLevel} / 7`;
+            document.getElementById('level-info').innerText = `第 ${currentLevel} 關 / 7`;
             document.getElementById('result-screen').style.display = 'none';
             document.getElementById('victory-box').style.display = 'none';
-            document.getElementById('pull-hint').style.top = '-50px';
             gameActive = true; requestAnimationFrame(gameLoop);
-        } else { alert("傳說終結！你已蒐集全部信物，成為影之神！"); location.reload(); }
+        } else {
+            alert("武林至尊！你已蒐集全部七顆信物，成為影之神！");
+            location.reload();
+        }
     }
 
     function checkCombat() {
         [p1, p2].forEach(a => {
             const v = (a === p1) ? p2 : p1;
             if (a.isAttacking && a.attackCD >= playerStats.attackCD - 5) {
-                let range = a.isNPC ? 70 : playerStats.attackRange;
+                let range = a.isNPC ? 75 : playerStats.attackRange;
                 if ((a.facing === 1 && v.x > a.x && v.x < a.x + range) || (a.facing === -1 && v.x < a.x && v.x > a.x - range)) {
-                    if (Math.abs(a.y - v.y) < 50) {
+                    if (Math.abs(a.y - v.y) < 55) {
                         let isCrit = !a.isNPC && Math.random() < playerStats.critRate;
-                        let dmg = a.isNPC ? (8 + currentLevel * 2) : playerStats.attackDmg;
-                        if (isCrit) { dmg *= 2.2; floatingTexts.push({ x: v.x, y: v.y, text: "爆擊!!", life: 30 }); }
+                        let dmg = a.isNPC ? (9 + currentLevel * 2) : playerStats.attackDmg;
+                        if (isCrit) { dmg *= 2.3; floatingTexts.push({ x: v.x, y: v.y - 10, text: "爆擊!!", life: 30 }); }
                         v.hp -= dmg;
                     }
                 }
@@ -207,40 +211,46 @@
         if (!gameActive) return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // AI 邏輯：會自動尋找玩家台階並追逐
+        // AI 追逐邏輯
         let dx = p1.x - p2.x;
         let dy = p1.y - p2.y;
-        let speed = 2.5 + (currentLevel * 0.5);
-        if (Math.abs(dx) > 60) { p2.dx = dx > 0 ? speed : -speed; p2.facing = dx > 0 ? 1 : -1; }
+        let enemySpeed = 2.8 + (currentLevel * 0.45);
+        if (Math.abs(dx) > 60) { p2.dx = dx > 0 ? enemySpeed : -enemySpeed; p2.facing = dx > 0 ? 1 : -1; }
         else if (Math.random() < (0.05 + currentLevel*0.01) && p2.attackCD === 0) {
             p2.facing = (dx > 0) ? 1 : -1; p2.isAttacking = true; p2.attackCD = 25;
         }
-        // AI 跳躍邏輯：如果玩家在上方，AI 會嘗試跳躍
-        if (dy < -50 && Math.random() < 0.02 && p2.dy === 0) p2.dy = -13;
+        if (dy < -60 && Math.random() < 0.03 && p2.dy === 0) p2.dy = -13;
 
         p1.update(); p2.update();
         checkCombat();
 
+        // 畫地型
         ctx.fillStyle = "#333";
-        platforms.forEach(p => ctx.fillRect(p.x, p.y, p.w, p.h));
+        platforms.forEach(p => {
+            ctx.fillRect(p.x, p.y, p.w, p.h);
+            ctx.strokeStyle = "#444"; ctx.strokeRect(p.x, p.y, p.w, p.h);
+        });
         p1.draw(); p2.draw();
 
-        ctx.fillStyle = "gold"; ctx.font = "bold 20px sans-serif";
+        // 浮動文字
+        ctx.fillStyle = "gold"; ctx.font = "bold 22px Arial";
         floatingTexts.forEach((ft, i) => {
-            ctx.fillText(ft.text, ft.x, ft.y); ft.y--; ft.life--;
+            ctx.fillText(ft.text, ft.x, ft.y); ft.y -= 1.5; ft.life--;
             if (ft.life <= 0) floatingTexts.splice(i, 1);
         });
 
+        // UI
         document.getElementById('p1-hp').style.width = (Math.max(0, p1.hp) / playerStats.maxHp * 100) + '%';
         document.getElementById('p2-hp').style.width = (Math.max(0, p2.hp) / p2.maxHp * 100) + '%';
 
         if (p1.hp <= 0 || p2.hp <= 0) {
             gameActive = false;
             document.getElementById('result-screen').style.display = 'flex';
-            if (p1.hp <= 0) document.getElementById('defeat-box').style.display = 'flex';
-            else {
+            if (p1.hp <= 0) {
+                document.getElementById('defeat-box').style.display = 'flex';
+            } else {
                 document.getElementById('victory-box').style.display = 'flex';
-                document.getElementById('relic-name').innerText = `獲得信物：${relicData[currentLevel-1].name} ${relicData[currentLevel-1].icon}`;
+                document.getElementById('relic-get-text').innerText = `獲得信物：${relicData[currentLevel-1].name} ${relicData[currentLevel-1].icon}`;
             }
         } else { requestAnimationFrame(gameLoop); }
     }
