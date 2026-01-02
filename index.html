@@ -3,276 +3,249 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>蛋蛋明星大亂鬥 - 下拉重開版</title>
+    <title>忍者武士：指滑大亂鬥</title>
     <style>
         body {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            background-color: #222;
-            font-family: "Microsoft JhengHei", Arial, sans-serif;
-            /* 允許瀏覽器預設的下拉行為，或者透過 JS 控制 */
-            overscroll-behavior-y: contain; 
-            touch-action: none; /* 我們手動處理觸摸事件 */
+            margin: 0; padding: 0; overflow: hidden;
+            background-color: #1a1a1a;
+            font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
+            touch-action: none;
+            overscroll-behavior-y: contain;
         }
         #game-container {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            position: relative; width: 100vw; height: 100vh;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
         canvas {
-            background: linear-gradient(to bottom, #4facfe 0%, #00f2fe 100%);
-            box-shadow: 0 0 30px rgba(0,0,0,0.7);
-            max-width: 100%;
-            max-height: 65vh;
-            border: 5px solid #fff;
-            border-radius: 10px;
+            background: #2c3e50;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            max-width: 100%; max-height: 80vh;
+            border: 4px solid #333;
         }
-
         /* 下拉提示 */
         #refresh-hint {
-            position: absolute;
-            top: -50px;
-            width: 100%;
-            text-align: center;
-            color: white;
-            font-weight: bold;
-            transition: top 0.2s;
-            z-index: 200;
+            position: absolute; top: -60px; width: 100%; text-align: center;
+            color: #ff4757; font-weight: bold; transition: 0.3s; z-index: 200;
         }
-
-        /* UI 介面 */
+        /* 血條 */
         #ui-overlay {
-            position: absolute;
-            top: 20px;
-            width: 100%;
-            display: flex;
-            justify-content: space-around;
-            pointer-events: none;
+            position: absolute; top: 20px; width: 100%;
+            display: flex; justify-content: space-around; pointer-events: none;
         }
-        .hp-bar-outer { width: 150px; height: 20px; background: #333; border: 2px solid #fff; border-radius: 15px; overflow: hidden; }
-        .hp-fill { width: 100%; height: 100%; background: #2ed573; transition: width 0.3s; }
-        .label { color: white; text-shadow: 2px 2px 4px black; text-align: center; margin-bottom: 5px; font-weight: bold; }
+        .hp-box { text-align: center; }
+        .hp-bar { width: 150px; height: 15px; background: #444; border: 2px solid #fff; border-radius: 10px; overflow: hidden; }
+        .hp-fill { width: 100%; height: 100%; background: #ff4757; transition: 0.3s; }
+        .name { color: white; font-size: 14px; margin-bottom: 5px; text-shadow: 1px 1px 2px #000; }
+        .power-tag { color: #ffa502; font-size: 12px; font-weight: bold; display: none; }
 
-        /* 結算畫面 */
+        /* 結算 */
         #result-screen {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85);
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 100;
-            color: white;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); display: none;
+            flex-direction: column; align-items: center; justify-content: center; z-index: 300;
         }
-        #result-title { font-size: 48px; margin-bottom: 20px; }
-        .restart-btn {
-            padding: 12px 30px;
-            font-size: 20px;
-            background: #ff4757;
-            color: white;
-            border: none;
-            border-radius: 50px;
-            cursor: pointer;
+        #result-title { font-size: 60px; color: gold; margin-bottom: 20px; }
+        .btn {
+            padding: 15px 40px; font-size: 24px; background: #e67e22;
+            color: white; border: none; border-radius: 5px; cursor: pointer;
         }
-
-        /* 手機按鈕 */
-        #controls {
-            display: flex;
-            justify-content: space-between;
-            width: 95%;
-            max-width: 500px;
-            margin-top: 10px;
+        #instruction {
+            position: absolute; bottom: 20px; color: rgba(255,255,255,0.5); font-size: 14px;
         }
-        .btn-group { display: flex; gap: 10px; }
-        .ctrl-btn {
-            width: 65px; height: 65px;
-            background: rgba(255, 255, 255, 0.8);
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: bold; font-size: 20px;
-            user-select: none; border: 2px solid #444;
-        }
-        .attack-btn { background: #ff4757; color: white; width: 75px; height: 75px; }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <div id="refresh-hint">⬇️ 釋放以重新整理網頁 ⬇️</div>
+    <div id="refresh-hint">⬇️ 下拉重新整理網頁 ⬇️</div>
 
     <div id="ui-overlay">
-        <div>
-            <div class="label">玩家 🥚</div>
-            <div class="hp-bar-outer"><div id="p1-hp" class="hp-fill"></div></div>
+        <div class="hp-box">
+            <div class="name">我方武士 🥷 <span id="p1-power" class="power-tag">POWER UP!</span></div>
+            <div class="hp-bar"><div id="p1-hp" class="hp-fill" style="background: #2ecc71;"></div></div>
         </div>
-        <div>
-            <div class="label">電腦 🤖</div>
-            <div class="hp-bar-outer"><div id="p2-hp" class="hp-fill" style="background: #ffa502;"></div></div>
+        <div class="hp-box">
+            <div class="name">敵方忍者 👹 <span id="p2-power" class="power-tag">POWER UP!</span></div>
+            <div class="hp-bar"><div id="p2-hp" class="hp-fill"></div></div>
         </div>
     </div>
 
     <canvas id="gameCanvas"></canvas>
+    <div id="instruction">滑動：移動/跳躍 | 點擊：攻擊 | 下拉：重來</div>
 
     <div id="result-screen">
-        <div id="award-icon" style="font-size: 80px;">🏆</div>
-        <div id="result-title">你贏了！</div>
-        <button class="restart-btn" onclick="resetGame()">再戰一場</button>
-        <p style="margin-top: 20px; color: #aaa;">(或者下拉網頁重新開始)</p>
-    </div>
-
-    <div id="controls">
-        <div class="btn-group">
-            <div class="ctrl-btn" id="btn-left">←</div>
-            <div class="ctrl-btn" id="btn-right">→</div>
-        </div>
-        <div class="btn-group">
-            <div class="ctrl-btn" id="btn-jump">跳</div>
-            <div class="ctrl-btn attack-btn" id="btn-attack">⚔️</div>
-        </div>
+        <div id="result-title">勝負已分</div>
+        <button class="btn" onclick="location.reload()">再戰江湖</button>
     </div>
 </div>
 
 <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
-    const resultScreen = document.getElementById('result-screen');
-    const refreshHint = document.getElementById('refresh-hint');
-
     canvas.width = 800;
     canvas.height = 500;
 
-    // --- 下拉重新整理邏輯 ---
-    let touchStartY = 0;
-    let isPulling = false;
-
-    window.addEventListener('touchstart', e => {
-        touchStartY = e.touches[0].pageY;
-    }, {passive: false});
-
-    window.addEventListener('touchmove', e => {
-        const touchY = e.touches[0].pageY;
-        const pullDist = touchY - touchStartY;
-
-        // 如果在螢幕上方往下拉
-        if (pullDist > 50 && window.scrollY === 0) {
-            isPulling = true;
-            refreshHint.style.top = '20px'; // 顯示提示
-            if (pullDist > 150) refreshHint.innerText = "🔥 放開立即重啟遊戲 🔥";
-        } else {
-            refreshHint.style.top = '-50px';
-        }
-    }, {passive: false});
-
-    window.addEventListener('touchend', e => {
-        const touchEndY = e.changedTouches[0].pageY;
-        if (isPulling && (touchEndY - touchStartY) > 150) {
-            // 執行重新整理網頁
-            location.reload();
-        }
-        isPulling = false;
-        refreshHint.style.top = '-50px';
-        refreshHint.innerText = "⬇️ 釋放以重新整理網頁 ⬇️";
-    });
-
-    // --- 遊戲邏輯 ---
+    // --- 物理常數 ---
     const gravity = 0.8;
-    const friction = 0.8;
+    const friction = 0.85;
     let gameActive = true;
 
+    // --- 地型 ---
     const platforms = [
-        { x: 150, y: 380, w: 500, h: 25 }, 
-        { x: 80, y: 240, w: 160, h: 15 }, 
-        { x: 560, y: 240, w: 160, h: 15 }, 
-        { x: 325, y: 130, w: 150, h: 15 }
+        { x: 100, y: 400, w: 600, h: 20 },
+        { x: 50, y: 280, w: 200, h: 15 },
+        { x: 550, y: 280, w: 200, h: 15 },
+        { x: 300, y: 180, w: 200, h: 15 }
     ];
 
-    class Egg {
+    // --- 道具系統 ---
+    class Item {
+        constructor() {
+            this.spawn();
+        }
+        spawn() {
+            this.x = Math.random() * 600 + 100;
+            this.y = -50;
+            this.w = 30; this.h = 30;
+            this.active = true;
+        }
+        draw() {
+            if (!this.active) return;
+            this.y += 2; // 緩慢落下
+            platforms.forEach(p => {
+                if (this.y + this.h > p.y && this.x > p.x && this.x < p.x + p.w && this.y < p.y) this.y = p.y - this.h;
+            });
+            ctx.fillStyle = "#ff4757";
+            ctx.fillRect(this.x, this.y, this.w, this.h);
+            ctx.strokeStyle = "gold";
+            ctx.lineWidth = 3;
+            ctx.strokeRect(this.x, this.y, this.w, this.h);
+            ctx.fillStyle = "white";
+            ctx.fillText("力", this.x + 10, this.y + 20);
+        }
+    }
+    const powerUp = new Item();
+
+    // --- 忍者類別 ---
+    class Ninja {
         constructor(x, y, color, isNPC) {
             this.initialX = x; this.initialY = y;
             this.color = color; this.isNPC = isNPC;
-            this.width = 40; this.height = 50;
             this.reset();
         }
         reset() {
             this.x = this.initialX; this.y = this.initialY;
+            this.w = 35; this.h = 50;
             this.dx = 0; this.dy = 0; this.hp = 100;
             this.facing = this.isNPC ? -1 : 1;
-            this.isAttacking = false; this.attackCooldown = 0; this.jumpCount = 0;
+            this.jumpCount = 0;
+            this.isAttacking = false;
+            this.attackCooldown = 0;
+            this.powerTimer = 0;
         }
         draw() {
+            let currentW = this.powerTimer > 0 ? this.w * 1.3 : this.w;
+            let currentH = this.powerTimer > 0 ? this.h * 1.3 : this.h;
+
+            // 畫劍
             if (this.isAttacking) {
-                ctx.fillStyle = "rgba(255,255,255,0.8)";
-                ctx.save();
-                ctx.translate(this.x + this.width/2, this.y + this.height/2);
-                ctx.rotate(this.facing * Math.PI / 4);
-                ctx.fillRect(0, -5, 60 * this.facing, 10);
-                ctx.restore();
+                ctx.strokeStyle = this.powerTimer > 0 ? "orange" : "#fff";
+                ctx.lineWidth = 5;
+                ctx.beginPath();
+                ctx.moveTo(this.x + currentW/2, this.y + currentH/2);
+                ctx.lineTo(this.x + currentW/2 + (70 * this.facing), this.y + currentH/2);
+                ctx.stroke();
             }
+
+            // 身體
             ctx.fillStyle = this.color;
-            ctx.beginPath();
-            ctx.ellipse(this.x + this.width/2, this.y + this.height/2, this.width/2, this.height/2, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = "#000"; ctx.lineWidth = 3; ctx.stroke();
-            ctx.fillStyle = "#000";
-            let eyeX = this.x + (this.facing === 1 ? 25 : 10);
-            ctx.beginPath(); ctx.arc(eyeX, this.y + 15, 4, 0, Math.PI * 2); ctx.fill();
+            ctx.fillRect(this.x, this.y, currentW, currentH);
+            // 頭帶
+            ctx.fillStyle = this.isNPC ? "#ff4757" : "#2ecc71";
+            ctx.fillRect(this.x, this.y + 10, currentW, 8);
+            // 眼睛
+            ctx.fillStyle = "white";
+            let eyeX = this.x + (this.facing === 1 ? currentW - 12 : 5);
+            ctx.fillRect(eyeX, this.y + 12, 8, 3);
+
+            if (this.powerTimer > 0) this.powerTimer--;
+            document.getElementById(this.isNPC ? 'p2-power' : 'p1-power').style.display = this.powerTimer > 0 ? 'inline' : 'none';
         }
         update() {
             this.dy += gravity; this.x += this.dx; this.y += this.dy; this.dx *= friction;
             platforms.forEach(p => {
-                if (this.x + this.width > p.x && this.x < p.x + p.w &&
-                    this.y + this.height > p.y && this.y + this.height < p.y + p.h + this.dy) {
-                    if (this.dy >= 0) { this.dy = 0; this.y = p.y - this.height; this.jumpCount = 0; }
+                if (this.x + this.w > p.x && this.x < p.x + p.w && this.y + this.h > p.y && this.y + this.h < p.y + p.h + this.dy) {
+                    if (this.dy >= 0) { this.dy = 0; this.y = p.y - this.h; this.jumpCount = 0; }
                 }
             });
-            if (this.x < 0) this.x = 0;
-            if (this.x + this.width > canvas.width) this.x = canvas.width - this.width;
-            if (this.y > canvas.height) { this.hp -= 25; this.y = 0; this.dx = 0; updateHPUI(); }
+            if (this.x < 0) this.x = 0; if (this.x + this.w > canvas.width) this.x = canvas.width - this.w;
+            if (this.y > canvas.height) { this.hp -= 20; this.y = 0; updateHP(); }
             if (this.attackCooldown > 0) this.attackCooldown--;
-            if (this.attackCooldown < 15) this.isAttacking = false;
+            if (this.attackCooldown < 10) this.isAttacking = false;
+
+            // 吃到道具
+            if (powerUp.active && this.x < powerUp.x + powerUp.w && this.x + this.w > powerUp.x && this.y < powerUp.y + powerUp.h && this.y + this.h > powerUp.y) {
+                this.powerTimer = 300; powerUp.active = false;
+                setTimeout(() => { if(!gameActive) return; powerUp.spawn(); }, 5000);
+            }
         }
         attack() {
-            if (this.attackCooldown === 0) { this.isAttacking = true; this.attackCooldown = 30; return true; }
+            if (this.attackCooldown === 0) { this.isAttacking = true; this.attackCooldown = 20; return true; }
             return false;
         }
     }
 
-    const player = new Egg(200, 300, "#ffffff", false);
-    const npc = new Egg(550, 300, "#f1c40f", true);
+    const player = new Ninja(200, 300, "#222", false);
+    const npc = new Ninja(550, 300, "#444", true);
 
-    const keys = {};
-    window.addEventListener('keydown', e => keys[e.code] = true);
-    window.addEventListener('keyup', e => keys[e.code] = false);
+    // --- 全螢幕指滑操控 ---
+    let tStartX = 0, tStartY = 0;
+    window.addEventListener('touchstart', e => {
+        tStartX = e.touches[0].pageX;
+        tStartY = e.touches[0].pageY;
+    });
 
-    let mLeft = false, mRight = false;
-    function bind(id, d, u) {
-        const el = document.getElementById(id);
-        el.addEventListener('touchstart', e => { e.preventDefault(); d(); });
-        el.addEventListener('touchend', e => { e.preventDefault(); if(u) u(); });
-    }
-    bind('btn-left', () => mLeft = true, () => mLeft = false);
-    bind('btn-right', () => mRight = true, () => mRight = false);
-    bind('btn-jump', () => { if(player.jumpCount < 2) { player.dy = -13; player.jumpCount++; } });
-    bind('btn-attack', () => player.attack());
+    window.addEventListener('touchend', e => {
+        let tEndX = e.changedTouches[0].pageX;
+        let tEndY = e.changedTouches[0].pageY;
+        let dx = tEndX - tStartX;
+        let dy = tEndY - tStartY;
 
-    function updateHPUI() {
+        if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+            player.attack(); // 點擊攻擊
+        } else if (dy < -50) {
+            if (player.jumpCount < 2) { player.dy = -14; player.jumpCount++; } // 向上滑跳躍
+        } else if (dx > 50) {
+            player.dx = 15; player.facing = 1; // 向右滑衝刺
+        } else if (dx < -50) {
+            player.dx = -15; player.facing = -1; // 向左滑衝刺
+        }
+    });
+
+    // --- 下拉重新整理 (邏輯延用) ---
+    let pullStartY = 0;
+    window.addEventListener('touchstart', e => pullStartY = e.touches[0].pageY);
+    window.addEventListener('touchmove', e => {
+        let dist = e.touches[0].pageY - pullStartY;
+        if (dist > 100 && window.scrollY === 0) {
+            document.getElementById('refresh-hint').style.top = '20px';
+            if (dist > 200) location.reload();
+        }
+    });
+
+    function updateHP() {
         document.getElementById('p1-hp').style.width = Math.max(0, player.hp) + '%';
         document.getElementById('p2-hp').style.width = Math.max(0, npc.hp) + '%';
     }
 
-    function checkHit(attacker, victim) {
-        if (attacker.isAttacking && attacker.attackCooldown === 25) {
-            const hitRange = 70;
-            const attackerMidX = attacker.x + attacker.width/2;
-            const reach = attackerMidX + (attacker.facing * hitRange);
-            if (victim.x < Math.max(attackerMidX, reach) && victim.x + victim.width > Math.min(attackerMidX, reach) && Math.abs(attacker.y - victim.y) < 60) {
-                victim.hp -= 15; victim.dx = attacker.facing * 20; victim.dy = -5; updateHPUI();
+    function checkHit(a, v) {
+        if (a.isAttacking && a.attackCooldown === 15) {
+            let range = a.powerTimer > 0 ? 100 : 70;
+            let dmg = a.powerTimer > 0 ? 25 : 10;
+            let aMidX = a.x + a.w/2;
+            let reach = aMidX + (a.facing * range);
+            if (v.x < Math.max(aMidX, reach) && v.x + v.w > Math.min(aMidX, reach) && Math.abs(a.y - v.y) < 60) {
+                v.hp -= dmg; v.dx = a.facing * (a.powerTimer > 0 ? 25 : 15); v.dy = -5; updateHP();
             }
         }
     }
@@ -280,31 +253,33 @@
     function gameLoop() {
         if (!gameActive) return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        if (keys['ArrowLeft'] || mLeft) { player.dx = -6; player.facing = -1; }
-        if (keys['ArrowRight'] || mRight) { player.dx = 6; player.facing = 1; }
-        if (keys['Space'] || keys['ArrowUp']) { if(player.jumpCount === 0) { player.dy = -13; player.jumpCount = 1; } }
-        if (keys['KeyZ']) player.attack();
 
-        // AI
-        const dist = player.x - npc.x;
-        if (Math.abs(dist) > 70) { npc.dx = dist > 0 ? 3.5 : -3.5; npc.facing = dist > 0 ? 1 : -1; }
-        else { if (Math.random() < 0.06) npc.attack(); }
+        // AI 邏輯
+        let dist = player.x - npc.x;
+        if (Math.abs(dist) > 80) {
+            npc.dx = dist > 0 ? 3 : -3; npc.facing = dist > 0 ? 1 : -1;
+        } else {
+            if (Math.random() < 0.05) npc.attack();
+        }
+        if (Math.random() < 0.01 && npc.jumpCount === 0) npc.dy = -12;
 
         player.update(); npc.update();
         checkHit(player, npc); checkHit(npc, player);
 
-        ctx.fillStyle = "#2f3542";
+        // 畫地型
+        ctx.fillStyle = "#34495e";
         platforms.forEach(p => ctx.fillRect(p.x, p.y, p.w, p.h));
+
+        powerUp.draw();
         player.draw(); npc.draw();
 
-        if (player.hp <= 0) { gameActive = false; resultScreen.style.display = 'flex'; document.getElementById('result-title').innerText = "大失敗！"; }
-        else if (npc.hp <= 0) { gameActive = false; resultScreen.style.display = 'flex'; document.getElementById('result-title').innerText = "勝利！"; }
-        else requestAnimationFrame(gameLoop);
-    }
-
-    function resetGame() {
-        player.reset(); npc.reset(); updateHPUI();
-        resultScreen.style.display = 'none'; gameActive = true; gameLoop();
+        if (player.hp <= 0 || npc.hp <= 0) {
+            gameActive = false;
+            document.getElementById('result-screen').style.display = 'flex';
+            document.getElementById('result-title').innerText = player.hp <= 0 ? "勝敗乃常事" : "武運昌隆！";
+        } else {
+            requestAnimationFrame(gameLoop);
+        }
     }
 
     gameLoop();
